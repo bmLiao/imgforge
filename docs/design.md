@@ -333,4 +333,17 @@ imgforge/
 | Pillow + resvg-py | 全部範例通過 |
 | 無任何 SVG 後端（模擬） | `.pix` 正常；SVG 輸出一行錯誤與安裝提示 |
 
-待使用者上傳 claude.ai 實測：沙箱能否 `pip install resvg-py`、`python`/`python3` 指令名稱。
+
+### claude.ai 實測（2026-11-12）
+
+上傳 `dist/imgforge.zip`，新對話請求「64px 寵物 icon + 4 幀待機 GIF」：
+
+| 項目 | 結果 |
+|---|---|
+| skill 觸發 / 路徑 | ✅ 自動載入；位置 `/root/.claude/skills/synced/<id>/imgforge`，`python3` 可用 |
+| `check` | `backends: 無`（沙箱無 resvg/cairosvg/magick） |
+| `pip install` | ❌ 預設網路設定禁止安裝套件 |
+| 降級 | ✅ 依 SKILL.md 改走 `.pix`，產出 icon 與 GIF |
+| 問題 | Claude 用 Python 產生 `.pix` 時行數算錯一次（重做成功）；`.pix` 畫質明顯低於 SVG |
+
+結論：網頁版若要 SVG，需 (a) 使用者開放網路安裝套件，或 (b) 把 resvg-py 的 Linux wheel（abi3、cp310+、x86_64，約 1.4MB）打包進 zip。
