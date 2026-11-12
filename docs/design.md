@@ -1,6 +1,6 @@
 # imgforge 設計文件
 
-> 狀態：P0–P3 完成（2026-11-12）；P4 claude.ai 待實測。
+> 狀態：P0–P3 完成（2026-11-12）；P4 claude.ai 取消（以 Claude Code 對話內使用為主）。
 
 ## 1. 目的
 
@@ -289,7 +289,7 @@ imgforge/
 | **P1 PoC** ✅ | 1 隻寵物 SVG → 4 幀待機 → 2 尺寸 + sheet + WebP/GIF | 畫質可接受、token 實測在估算內 |
 | P2 核心 ✅ | §4–6 全部（含 anims）、預覽、驗證、SKILL.md、install.py | 範例全部通過（`tests/test_imgforge.py`） |
 | P3 擴充 ✅ | presets 與槽位、`.pix` 多幀、ops 註冊、library 部件、減色/銳化/描邊/投影 | MV 預設規格可產出（實際放進遊戲待使用者驗證） |
-| P4 claude.ai | ~~打包 zip（`python pack.py` → `dist/imgforge.zip`）、降級路徑驗證~~（已完成）、沙箱實測 | 網頁版可用同一份 skill |
+| P4 claude.ai ❌ 取消 | 打包 zip（`pack.py` 保留）、降級路徑已驗證；沙箱無 SVG 後端，不再推進 | — |
 
 ## 13. P0 實測結果（2026-11-12）
 
