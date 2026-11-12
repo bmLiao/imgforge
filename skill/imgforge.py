@@ -16,15 +16,16 @@ def cmd_render(a):
     job_path = Path(a.job)
     job = load_job(job_path)
     outdir = Path(a.out) if a.out else job_path.parent / "out"
-    r, items = Renderer(), []
+    r, items = Renderer(), {}
     for i, out in enumerate(job.outputs):
-        line, item = write_output(job, out, i, outdir, r)
+        line, (label, imgs) = write_output(job, out, i, outdir, r)
         print(line)
-        if item[1]:
-            items.append(item)
+        if imgs:  # 內容相同的輸出合併成一列，省預覽 token
+            key = hash(tuple((im.size, im.tobytes()) for im in imgs))
+            items[key] = (items[key][0] + ", " + label, imgs) if key in items else (label, imgs)
     if not a.no_preview and items:
         p = outdir / "_preview.png"
-        preview(items, p)
+        preview(list(items.values()), p)
         print(f"PREVIEW {os.path.relpath(p).replace(os.sep, '/')}")
 
 

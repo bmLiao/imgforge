@@ -285,7 +285,7 @@ imgforge/
 | 階段 | 內容 | 驗收 |
 |---|---|---|
 | **P0 實測** ✅ | 安裝 resvg-py，SVG → PNG | Windows 可正常點陣化 |
-| **P1 PoC** ✅（token 待實際使用量測） | 1 隻寵物 SVG → 4 幀待機 → 2 尺寸 + sheet + WebP/GIF | 畫質可接受、token 實測在估算內 |
+| **P1 PoC** ✅ | 1 隻寵物 SVG → 4 幀待機 → 2 尺寸 + sheet + WebP/GIF | 畫質可接受、token 實測在估算內 |
 | P2 核心 ✅ | §4–6 全部（含 anims）、預覽、驗證、SKILL.md、install.py | 範例全部通過（`tests/test_imgforge.py`） |
 | P3 擴充 | ~~presets 與槽位、`.pix` 多幀~~（已完成）、ops 註冊、library 部件、減色/銳化 | MV 預設規格產出可直接放進遊戲 |
 | P4 claude.ai | 打包 zip、沙箱實測、降級路徑驗證 | 網頁版可用同一份 skill |
@@ -306,3 +306,18 @@ imgforge/
 | 外部 `style_sheet` 覆寫內嵌 `<style>` | ❌ 優先序較低，需 `!important` → 採「追加至內嵌 `<style>`」 |
 | 無效 SVG | ✅ 拋 `ValueError` 並附原因 |
 | 效能 | 128px 約 3ms/張、512px 約 30ms；首次呼叫約 15–200ms（初始化） |
+
+## 14. P1 實測結果（2026-11-12）
+
+任務：經 skill 做小鳥待機動畫（拍翅＋浮動＋眨眼）→ 128px WebP/GIF、64px sheet、icon 32。一次成功，無需修正。
+
+| 項目 | token（估算） |
+|---|---|
+| SVG 原圖（593 字元） | ~185 |
+| job.json | ~166 |
+| CLI 結果 | ~60 |
+| 預覽（512×317，相同內容列已合併） | ~216 |
+| SKILL.md（每對話載入一次） | ~1240 |
+| **合計** | **~1.9k** |
+
+簡單素材遠低於 §10 估算；複雜角色主要增加在 SVG 原圖。
