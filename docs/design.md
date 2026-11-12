@@ -322,3 +322,15 @@ imgforge/
 | **合計** | **~1.9k** |
 
 簡單素材遠低於 §10 估算；複雜角色主要增加在 SVG 原圖。
+
+## 15. P4 本機模擬（2026-11-12）
+
+`dist/imgforge.zip` 解壓至全新目錄，以乾淨 venv 執行（無 WSL/Docker，未能模擬 Linux 沙箱）：
+
+| 環境 | 結果 |
+|---|---|
+| 只裝 Pillow（本機有 ImageMagick） | 全部範例通過；自動退到 magick 備援，畫質與 resvg 一致 |
+| Pillow + resvg-py | 全部範例通過 |
+| 無任何 SVG 後端（模擬） | `.pix` 正常；SVG 輸出一行錯誤與安裝提示 |
+
+待使用者上傳 claude.ai 實測：沙箱能否 `pip install resvg-py`、`python`/`python3` 指令名稱。
