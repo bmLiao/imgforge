@@ -1,7 +1,7 @@
 # imgforge 設計文件
 
 > 狀態：P0–P3 完成（2026-11-12）；P4 claude.ai 取消（以 Claude Code 對話內使用為主）。
-> 追加（2026-11-12）：`mv-iconset`（skip 留 index 0、高度依數量）、`.pix` `palette` 換色、`center` op、op/palette 皆可用 `frames` 指定範圍。範例 `examples/iconset.json`。render `--preview-bg light|dark|#hex` 預覽底色。MV 專用規則移至 `skill/guides/rpgmaker-mv.md`，SKILL.md 只留索引。
+> 追加（2026-11-12）：`mv-iconset`（skip 留 index 0、高度依數量）、`.pix` `palette` 換色、`center` op、op/palette 皆可用 `frames` 指定範圍。範例 `examples/iconset.json`。render `--preview-bg light|dark|#hex` 預覽底色。SKILL.md 只留核心（約 4KB），動畫 / 輸出進階 / MV 拆至 `skill/guides/*.md` 依需求載入。
 
 ## 1. 目的
 

@@ -20,7 +20,7 @@ CLI：`python <本 skill 目錄>/imgforge.py <指令>`（需 Python 3.10+、Pill
 3. 寫原圖 + `job.json`（尺寸格式只寫在 job）。單圖可用 `quick` 免寫 job。
 4. `render job.json -o <輸出目錄>`；看一行結果，錯誤依訊息修正。
 5. Read `_preview.png` 自查（不要讀原尺寸輸出）。成品會放深色底時加 `--preview-bg dark`（或 `#rrggbb`）檢查，深色外框在深底會消失。
-6. 修正先找 job 參數，造型本身錯才 Edit 局部改原圖（不要整份重寫）：
+6. 修正先找 job 參數（細節見 `guides/output.md`），造型本身錯才 Edit 局部改原圖（不要整份重寫）：
 
 | 問題 | 用 |
 |---|---|
@@ -33,10 +33,7 @@ CLI：`python <本 skill 目錄>/imgforge.py <指令>`（需 Python 3.10+、Pill
 
 ## SVG 規則
 
-- 必有 `viewBox`；要動的部位用 `<g id="...">` 分組。
-- 顏色用 class + 內嵌 `<style>`（`.fur{fill:#f08a24}`）。**不可用 CSS `var()`**（後端不支援）。
-- 預設隱藏的部位寫 `display="none"`，以 `hide:false` 顯示。眨眼 = `eye_open`/`eye_closed` 兩組交替。
-- 巢狀群組：動畫附加在原 transform 後；`pivot` 用該群組內的座標；子群組跟隨父群組。
+- 必有 `viewBox`。顏色用 class + 內嵌 `<style>`（`.fur{fill:#f08a24}`）。**不可用 CSS `var()`**（後端不支援）。
 - 部件庫（省 token）：`<use href="lib:eye_round" x="14" y="18"/>`，部件以 (0,0) 為中心；清單見 `check`。可用 class `.eye` `.blush` `.mouth` `.sparkle` 換色。
 
 ## .pix
@@ -55,35 +52,16 @@ mirror: x        # 只寫左半 ceil(w/2) 字元；y 為上半；xy 兩者
 
 ```json
 {
-  "source": "pet.svg",
-  "anims": {
-    "idle": {"count": 4, "fps": 8, "tracks": {
-      "body": {"ty": {"wave": 2}},
-      "tail": {"rot": [0, 15, 0, -15], "pivot": [72, 60]},
-      "eye_closed": {"hide": {"keys": {"0": true, "3": false}}}
-    }},
-    "walk_left": {"source": "pet_left.svg", "count": 3, "tracks": {}}
-  },
+  "source": "icon.svg",
   "outputs": [
-    {"file": "pet_128.png", "size": [128, 128]},
-    {"file": "pet_blue.png", "size": [128, null], "css": ".fur{fill:#3a7bd5}"},
-    {"file": "sheet.png", "anim": "idle", "cell": [64, 64], "layout": {"cols": 4}},
-    {"file": "pet.webp", "anim": "idle", "size": [128, 128]},
+    {"file": "icon_128.png", "size": [128, 128]},
+    {"file": "icon_blue.webp", "size": [128, null], "css": ".body{fill:#3a7bd5}"},
     {"preset": "icon-64"}
   ]
 }
 ```
 
-- 只有一組動畫可寫頂層 `"frames": {...}`（= `anims.default`），輸出用 `"anim": true`。
-- 軌道值：常數 / `[每幀值]` / `{"wave": 振幅, "phase": 0~1}` / `{"keys": {"幀": 值}, "ease": "linear|in|out|inOut"}`（預設循環回第 0 幀）。
-- 屬性：`tx ty rot sx sy s opacity`（數值）、`hide fill`（不可 wave）。`rot/sx/sy` 必須給 `pivot`。`"*"` = 整張圖（.pix/PNG 只能用 `*`，單位為像素）。
-- 輸出欄位：
-  - 基本：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`matte`（GIF 邊緣底色）、`crisp`、`resample`、`quality`、`colors`、`source`（覆寫原圖）。
-  - 幀：`anim`、`frames`（選幀/重排/重複，如 `[1,0,1,2]`、`[0,0,3]`）、`fps`。
-  - 換色：`css`（SVG，`.fur{fill:#3a7bd5}`）；`palette`（.pix，`{"r":"#3a7bd5"}` 套全部，或 `[{"frames":[1,"3-5"],"set":{"r":"#3a7bd5"}}]`）。
-  - `ops`（後處理，依序逐格）：`"sharpen"`、`{"op":"outline","color":"#000","width":1}`、`{"op":"shadow","dx":2,"dy":2}`、`{"op":"center","axis":"xy","step":2,"dx":0,"dy":0}`（依實際像素置中再偏移；step = 像素風放大倍數，保格線）。
-  - **範圍**：`palette` 規則與每個 op 都可加 `"frames": [0, "3-5"]`，索引 = 此輸出排出的幀序（`frames` 選取後，sheet 為格序、不含 skip）；未列到的幀不套用。
-- sheet：`cell` + `layout {cols, rows, gap, order: row|col, skip}`（skip = 開頭留空格數）。未指定 anim 且有多組動畫時依序串接全部幀。槽位模式：`per` + `slots`（每槽位取同名動畫前 per 幀）。
+- 輸出欄位：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`crisp`（SVG 小尺寸硬邊）、`quality`、`colors`、`source`（覆寫原圖）、`preset`（其餘欄位可覆寫）。
 
 ## 指令
 
@@ -94,10 +72,12 @@ check [檔案]        # 無參數列出後端、ops、lib 部件；svg 列出 id
 presets             # 列出預設規格（icon-*、mv-*）
 ```
 
-## 平台指引（用途符合時才 Read）
+## 進階指引（需要時才 Read，路徑相對本 skill 目錄）
 
-| 用途 | 文件 |
+| 需要 | 文件 |
 |---|---|
-| RPG Maker MV（行走圖、SV 戰鬥圖、IconSet、臉圖） | `guides/rpgmaker-mv.md` |
+| 動畫：anims/tracks、眨眼擺動、GIF/WebP/APNG | `guides/animation.md` |
+| sheet、`frames` 選幀、換色變體/範圍、ops（描邊/陰影/置中） | `guides/output.md` |
+| RPG Maker MV：行走圖、SV 戰鬥圖、IconSet、臉圖 | `guides/rpgmaker-mv.md` |
 
-新增平台：在 `guides/` 加一份 md、在此表加一列。
+新增平台或主題：在 `guides/` 加一份 md、在此表加一列。
