@@ -7,6 +7,8 @@ description: 以最低 token 產出正確尺寸/格式的圖片：圖示、多�
 
 CLI：`python <本 skill 目錄>/imgforge.py <指令>`（需 Python 3.10+、Pillow；SVG 需 `pip install resvg-py`）。
 
+環境：首次使用先跑 `check`（無 `python` 時用 `python3`）。顯示無後端 → 試 `pip install resvg-py`（失敗再試 `cairosvg`）；仍無法安裝時 SVG 不可用，改用 `.pix` 或 PNG 流程，並告知使用者。
+
 ## 何時不用
 
 使用者只要 SVG 原檔 / HTML 內嵌 → 直接寫，不用工具。交付點陣圖（png/jpg/gif/webp）→ 一律用工具。
