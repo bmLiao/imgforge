@@ -1,6 +1,6 @@
 # imgforge 設計文件
 
-> 狀態：P0–P2 核心已實作（2026-11-12）；待 SKILL 實際使用驗證 token 與 P4 claude.ai 實測。
+> 狀態：P0–P3 完成（2026-11-12）；P4 claude.ai 待實測。
 
 ## 1. 目的
 
@@ -170,6 +170,7 @@ mirror: x          # 只寫左半，自動鏡像右半（省一半 token）
 | `crisp` | SVG 以 crispEdges 點陣化（小尺寸硬邊） |
 | `fps` | 覆寫動畫 fps |
 | `source` | 此輸出改用其他原圖（靜態） |
+| `ops` | 後處理清單，逐格套用（見 §7） |
 
 動畫格式建議：透明動畫優先 WebP / APNG；GIF 只有 1-bit 透明，需搭配 `matte`。
 
@@ -195,8 +196,8 @@ python imgforge.py presets                  # 列出預設規格
 | 位置 | 用途 | 方式 |
 |---|---|---|
 | `skill/presets/*.json` | 命名規格（尺寸、格子、排列、槽位、背景、檔名規則） | 加檔即生效 |
-| `skill/ops/*.py` | 新的後處理 / 變換 / 排版操作 | 以裝飾器註冊，核心自動載入 |
-| `skill/library/` | 可重用的 SVG 部件與調色盤（選配） | SVG 以 `<use href="lib:eye_round">` 引用 |
+| `skill/ops/*.py` | 後處理操作（逐格套用） | `@register("名稱")` 註冊 `fn(img, **參數) -> img`，核心自動載入；輸出以 `ops` 欄位使用。內建 sharpen / outline / shadow |
+| `skill/library/` | 可重用 SVG 部件（以 0,0 為中心） | `<use href="lib:eye_round" x= y=>` 引用；內建 eye_round / eye_closed / eye_happy / blush / mouth_smile / sparkle |
 
 ### 7.1 槽位（slots）：preset 對應多組動畫
 
@@ -276,7 +277,7 @@ imgforge/
 | resvg-py 在 Windows / claude.ai 沙箱不可用 | 後端抽換；無後端時 `.pix`/PNG 流程降級可用；先實測 |
 | SVG 縮到小尺寸（≤48px）糊掉 | 輸出選項 `crisp`；像素風改用 `.pix`；提供減色、銳化選項 |
 | GIF 半透明邊緣鋸齒 | `matte` 預混底色；建議改用 WebP / APNG |
-| 多方向原圖不一致 | 共用 `library/` 部件與調色盤；文件明示限制 |
+| 多方向原圖不一致 | 共用 `library/` 部件；左右向以 `"*": {"sx": -1}` 鏡像；文件明示限制 |
 | Claude 寫 `.pix` 行長出錯 | 工具嚴格驗證＋鏡像減量 |
 | claude.ai 沙箱套件與網路限制 | resvg-py 為編譯型套件，不保證可裝；核心邏輯只用 Pillow，部署前實測 |
 
@@ -287,7 +288,7 @@ imgforge/
 | **P0 實測** ✅ | 安裝 resvg-py，SVG → PNG | Windows 可正常點陣化 |
 | **P1 PoC** ✅ | 1 隻寵物 SVG → 4 幀待機 → 2 尺寸 + sheet + WebP/GIF | 畫質可接受、token 實測在估算內 |
 | P2 核心 ✅ | §4–6 全部（含 anims）、預覽、驗證、SKILL.md、install.py | 範例全部通過（`tests/test_imgforge.py`） |
-| P3 擴充 | ~~presets 與槽位、`.pix` 多幀~~（已完成）、ops 註冊、library 部件、減色/銳化 | MV 預設規格產出可直接放進遊戲 |
+| P3 擴充 ✅ | presets 與槽位、`.pix` 多幀、ops 註冊、library 部件、減色/銳化/描邊/投影 | MV 預設規格可產出（實際放進遊戲待使用者驗證） |
 | P4 claude.ai | 打包 zip、沙箱實測、降級路徑驗證 | 網頁版可用同一份 skill |
 
 ## 13. P0 實測結果（2026-11-12）
