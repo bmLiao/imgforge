@@ -20,8 +20,8 @@
               "escape", "victory", "dying", "abnormal", "sleep", "dead"]
   },
   "mv-iconset": {
-    "desc": "MV IconSet 寬 512，32×32 格每列 16；槽位預設依 anims 順序（各取第 0 幀）",
-    "file": "IconSet.png", "cell": [32, 32], "layout": {"cols": 16}, "per": 1
+    "desc": "MV IconSet 寬 512（引擎固定 16 欄）32×32；index 0 留空、高度依數量；依序排入所有動畫的幀",
+    "file": "IconSet.png", "cell": [32, 32], "layout": {"cols": 16, "skip": 1}
   },
   "mv-enemy": {
     "desc": "MV 敵人圖，尺寸自由、透明底",

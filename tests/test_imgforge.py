@@ -45,7 +45,7 @@ class Base(unittest.TestCase):
 
 class TestExamples(Base):
     def test_examples(self):
-        for j in ("pet.json", "slime.json"):
+        for j in ("pet.json", "slime.json", "iconset.json"):
             code, out = run("render", EX / j, "-o", TMP / "ex" / j)
             self.assertEqual(code, 0, out)
             self.assertIn("PREVIEW", out)
@@ -92,6 +92,22 @@ class TestOutputs(Base):
         self.assertIn("pet_sv.png 576x384 png 3f missing:wait", out)
         self.assertIn("pet_faces.png 576x288 png 5f", out)
 
+    def test_iconset_palette(self):
+        write("ico.pix", "size: 2x1\npalette: .=transparent r=#ff0000\n---\nr.\n---\n.r\n")
+        code, out = self.render({"source": "ico.pix", "frames": {}, "outputs": [
+            {"preset": "mv-iconset", "frames": [0, 0, 1, 1],
+             "palette": [{"frames": [1, "3-3"], "set": {"r": "#0000ff"}}]}]})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IconSet.png 512x32 png 4f", out)
+        im = Image.open(TMP / "out" / "IconSet.png").convert("RGBA")
+        self.assertEqual(im.getpixel((5, 16))[3], 0)  # index 0 留空
+        px = [im.getpixel((32 * i + 4, 16)) for i in (1, 2)]
+        self.assertEqual(px, [(255, 0, 0, 255), (0, 0, 255, 255)])
+        self.assertEqual(im.getpixel((32 * 4 + 28, 16)), (0, 0, 255, 255))
+        code, out = self.render({"anims": {"a": {"source": "ico.pix"}, "b": {"source": "ico.pix"}},
+                                 "outputs": [{"preset": "mv-iconset"}]})
+        self.assertIn("IconSet.png 512x32 png 4f", out)  # 多組動畫串接
+
     def test_pix_animation_tracks(self):
         code, out = self.render({"source": str(EX / "slime.pix"), "anims": {
             "hop": {"count": 4, "tracks": {"*": {"ty": [0, -2, 0, 0]}}}},
@@ -120,6 +136,24 @@ class TestP3(Base):
         ol = Image.open(TMP / "out" / "face_ol.png")
         self.assertGreater(ol.getpixel((40, 6))[3], 0)  # 描邊擴出圓外
 
+    def test_preview_bg(self):
+        for bg, px in (("dark", (24, 24, 32)), ("#ff00ff", (255, 0, 255))):
+            code, out = run("render", EX / "slime.json", "-o", TMP / "pv" / bg[1:], "--preview-bg", bg)
+            self.assertEqual(code, 0, out)
+            with Image.open(TMP / "pv" / bg[1:] / "_preview.png") as im:
+                self.assertEqual(im.convert("RGB").getpixel((im.width - 1, im.height - 1)), px)
+
+    def test_center_frames(self):
+        write("top.pix", "size: 4x4\npalette: .=transparent k=#000\n---\nkk..\n....\n....\n....\n")
+        code, out = self.render({"source": "top.pix", "frames": {}, "outputs": [
+            {"file": "c.png", "frames": [0, 0, 0], "cell": [8, 8], "ops": [
+                {"op": "center", "step": 2, "frames": [0]},
+                {"op": "center", "dy": 2, "frames": ["2-2"]}]}]})
+        self.assertEqual(code, 0, out)
+        im = Image.open(TMP / "out" / "c.png").convert("RGBA")
+        bb = [im.crop((8 * i, 0, 8 * i + 8, 8)).getchannel("A").getbbox() for i in range(3)]
+        self.assertEqual(bb, [(2, 2, 6, 4), (0, 0, 4, 2), (2, 5, 6, 7)])  # 置中 / 保留 / 置中後偏移
+
     def test_flip_right_from_left(self):
         code, out = self.render({"source": "pet.svg", "anims": {
             "left": {"count": 1}, "right": {"count": 1, "tracks": {"*": {"sx": -1}}}},
@@ -145,6 +179,10 @@ class TestErrors(Base):
         self.err({"source": "bad.pix", "outputs": [{"file": "a.png"}]}, "bad.pix line 5: 長度 3 != 4")
         write("bad2.pix", "size: 4x1\npalette: .=transparent\n---\n..z.\n")
         self.err({"source": "bad2.pix", "outputs": [{"file": "a.png"}]}, "未定義字元 'z'")
+        write("ok.pix", "size: 1x1\npalette: k=#000\n---\nk\n")
+        self.err({"source": "ok.pix", "outputs": [{"file": "a.png", "palette": {"z": "#fff"}}]}, "覆寫字元 'z' 未在原檔定義")
+        self.err({"source": "ok.pix", "outputs": [{"file": "a.png", "cell": [4, 4], "palette": [{"frames": [3], "set": {"k": "#fff"}}]}]}, "幀號 3 超出 0..0")
+        self.err({"source": "pet.svg", "outputs": [{"file": "a.png", "palette": {"k": "#fff"}}]}, "palette 只適用 .pix")
 
     def test_track_errors(self):
         base = {"source": "pet.svg", "outputs": [{"file": "a.gif", "anim": "a"}]}

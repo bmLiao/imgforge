@@ -19,8 +19,17 @@ CLI：`python <本 skill 目錄>/imgforge.py <指令>`（需 Python 3.10+、Pill
 2. 選原圖格式：一般 → SVG；像素風 ≤64px → `.pix`；已有素材 → PNG/JPG。
 3. 寫原圖 + `job.json`（尺寸格式只寫在 job）。單圖可用 `quick` 免寫 job。
 4. `render job.json -o <輸出目錄>`；看一行結果，錯誤依訊息修正。
-5. Read `_preview.png` 自查（不要讀原尺寸輸出）。
-6. 修正用 Edit 局部改原圖，不要整份重寫。
+5. Read `_preview.png` 自查（不要讀原尺寸輸出）。成品會放深色底時加 `--preview-bg dark`（或 `#rrggbb`）檢查，深色外框在深底會消失。
+6. 修正先找 job 參數，造型本身錯才 Edit 局部改原圖（不要整份重寫）：
+
+| 問題 | 用 |
+|---|---|
+| 圖示偏上/偏左、對齊不一 | `ops: [{"op":"center"}]`，可加 `frames` 只套部分、`dx/dy` 刻意偏移 |
+| 同造型要多種顏色 | `frames` 重複該幀 + `palette`（.pix）/ `css`（SVG） |
+| 尺寸、格數、留空 | `size` `cell` `layout` 或 `preset` |
+| 邊緣不清、要描邊陰影 | `ops`：`outline` `shadow` `sharpen` |
+
+範例（可直接 render）：`examples/pet.json`（SVG 動畫）、`slime.json`（.pix 動畫）、`iconset.json`（換色＋置中的圖示表）。
 
 ## SVG 規則
 
@@ -60,7 +69,7 @@ mirror: x        # 只寫左半 ceil(w/2) 字元；y 為上半；xy 兩者
     {"file": "pet_blue.png", "size": [128, null], "css": ".fur{fill:#3a7bd5}"},
     {"file": "sheet.png", "anim": "idle", "cell": [64, 64], "layout": {"cols": 4}},
     {"file": "pet.webp", "anim": "idle", "size": [128, 128]},
-    {"preset": "mv-character-single"}
+    {"preset": "icon-64"}
   ]
 }
 ```
@@ -68,16 +77,27 @@ mirror: x        # 只寫左半 ceil(w/2) 字元；y 為上半；xy 兩者
 - 只有一組動畫可寫頂層 `"frames": {...}`（= `anims.default`），輸出用 `"anim": true`。
 - 軌道值：常數 / `[每幀值]` / `{"wave": 振幅, "phase": 0~1}` / `{"keys": {"幀": 值}, "ease": "linear|in|out|inOut"}`（預設循環回第 0 幀）。
 - 屬性：`tx ty rot sx sy s opacity`（數值）、`hide fill`（不可 wave）。`rot/sx/sy` 必須給 `pivot`。`"*"` = 整張圖（.pix/PNG 只能用 `*`，單位為像素）。
-- 輸出欄位：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`matte`（GIF 邊緣底色）、`css`（追加樣式，換色變體）、`crisp`、`resample`、`frames`（如 `[1,0,1,2]`）、`fps`、`quality`、`colors`、`source`（覆寫原圖）、`ops`（後處理，逐格套用：`["sharpen", {"op":"outline","color":"#000","width":1}, {"op":"shadow","dx":2,"dy":2}]`）。
-- sheet：`cell` + `layout {cols, rows, gap, order: row|col}`。槽位模式：`per` + `slots`（每槽位取同名動畫前 per 幀）。
+- 輸出欄位：
+  - 基本：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`matte`（GIF 邊緣底色）、`crisp`、`resample`、`quality`、`colors`、`source`（覆寫原圖）。
+  - 幀：`anim`、`frames`（選幀/重排/重複，如 `[1,0,1,2]`、`[0,0,3]`）、`fps`。
+  - 換色：`css`（SVG，`.fur{fill:#3a7bd5}`）；`palette`（.pix，`{"r":"#3a7bd5"}` 套全部，或 `[{"frames":[1,"3-5"],"set":{"r":"#3a7bd5"}}]`）。
+  - `ops`（後處理，依序逐格）：`"sharpen"`、`{"op":"outline","color":"#000","width":1}`、`{"op":"shadow","dx":2,"dy":2}`、`{"op":"center","axis":"xy","step":2,"dx":0,"dy":0}`（依實際像素置中再偏移；step = 像素風放大倍數，保格線）。
+  - **範圍**：`palette` 規則與每個 op 都可加 `"frames": [0, "3-5"]`，索引 = 此輸出排出的幀序（`frames` 選取後，sheet 為格序、不含 skip）；未列到的幀不套用。
+- sheet：`cell` + `layout {cols, rows, gap, order: row|col, skip}`（skip = 開頭留空格數）。未指定 anim 且有多組動畫時依序串接全部幀。槽位模式：`per` + `slots`（每槽位取同名動畫前 per 幀）。
 
 ## 指令
 
 ```
-render job.json [-o 目錄] [--no-preview]
+render job.json [-o 目錄] [--no-preview] [--preview-bg light|dark|#rrggbb]
 quick src.svg -s 16,32,64 -o icon_{s}.png [--fit cover] [--bg #fff]
 check [檔案]        # 無參數列出後端、ops、lib 部件；svg 列出 id
 presets             # 列出預設規格（icon-*、mv-*）
 ```
 
-MV 行走圖：動畫名 `down/left/right/up` 各 3 幀，第 1 幀為站立（遊戲播放 1-0-1-2）。右向可由左向鏡像：同軌道再加 `"*": {"sx": -1}`，省一份原圖。SV 戰鬥圖：18 個動作名見 `presets`。
+## 平台指引（用途符合時才 Read）
+
+| 用途 | 文件 |
+|---|---|
+| RPG Maker MV（行走圖、SV 戰鬥圖、IconSet、臉圖） | `guides/rpgmaker-mv.md` |
+
+新增平台：在 `guides/` 加一份 md、在此表加一列。

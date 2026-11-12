@@ -135,7 +135,9 @@ class SvgSource:
                 root.set("viewBox", " ".join(num(v) for v in self.vb))
         return ET.tostring(root, encoding="unicode")
 
-    def render(self, idx, props, w, h, css=None, crisp=False, resample=None):
+    def render(self, idx, props, w, h, css=None, crisp=False, resample=None, pal=None):
+        if pal:
+            raise ForgeError(f"{self.name}: palette 只適用 .pix（SVG 換色用 css）")
         return rasterize(self.build(props, css, (w, h)), w, h, crisp)
 
 
@@ -202,8 +204,13 @@ def transform_image(img, p, nearest):
 class _BitmapSource:
     pixel = False
 
-    def render(self, idx, props, w, h, css=None, crisp=False, resample=None):
-        img = self.images[idx % self.frames]
+    def frame(self, idx, pal=None):
+        if pal:
+            raise ForgeError(f"{self.name}: palette 只適用 .pix")
+        return self.images[idx % self.frames]
+
+    def render(self, idx, props, w, h, css=None, crisp=False, resample=None, pal=None):
+        img = self.frame(idx, pal)
         bad = [k for k in props if k != "*"]
         if bad:
             raise ForgeError(f"{self.name}: 點陣來源只支援 '*' 軌道（收到 {bad[0]}）")
@@ -258,7 +265,7 @@ class PixSource(_BitmapSource):
                 blocks[-1].append((n + 1, ln))
         if not blocks or not any(blocks):
             raise ForgeError(f"{self.name}: '---' 後沒有像素列")
-        self.images = []
+        self.images, self.grids, self.pal = [], [], pal
         for bi, rows in enumerate(blocks):
             if len(rows) != rh:
                 at = rows[-1][0] if rows else "?"
@@ -273,11 +280,25 @@ class PixSource(_BitmapSource):
                 grid.append(row + row[:W // 2][::-1] if "x" in mir else row)
             if "y" in mir:
                 grid = grid + grid[:H // 2][::-1]
-            img = Image.new("RGBA", (W, H))
-            img.putdata([pal[c] for row in grid for c in row])
-            self.images.append(img)
+            self.grids.append(grid)
+            self.images.append(self._paint(grid, pal))
         self.frames = len(self.images)
         self.size = (W, H)
+
+    def _paint(self, grid, pal):
+        img = Image.new("RGBA", (len(grid[0]), len(grid)))
+        img.putdata([pal[c] for row in grid for c in row])
+        return img
+
+    def frame(self, idx, pal=None):
+        """pal：{字元: 顏色} 覆寫調色盤（僅限原檔已定義的字元）。"""
+        if not pal:
+            return self.images[idx % self.frames]
+        bad = next((c for c in pal if c not in self.pal), None)
+        if bad:
+            raise ForgeError(f"{self.name}: palette 覆寫字元 '{bad}' 未在原檔定義")
+        new = {**self.pal, **{c: _color(v, f"{self.name} palette {c}") for c, v in pal.items()}}
+        return self._paint(self.grids[idx % self.frames], new)
 
 
 def _color(s, where):

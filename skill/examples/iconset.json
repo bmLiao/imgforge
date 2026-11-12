@@ -1,0 +1,18 @@
+{
+  "source": "items.pix",
+  "frames": {},
+  "outputs": [
+    {"preset": "mv-iconset", "frames": [0, 0, 0, 5, 5, 5, 1, 1, 2, 2, 3, 3, 4, 6, 6],
+     "palette": [
+       {"frames": [1], "set": {"r": "#3a7bd5", "R": "#24508f"}},
+       {"frames": [2], "set": {"r": "#5ac54f", "R": "#2e7d32"}},
+       {"frames": [4], "set": {"p": "#e43b44", "P": "#a22633"}},
+       {"frames": [5], "set": {"p": "#b05bd8", "P": "#6b2c91"}},
+       {"frames": [7], "set": {"w": "#f7d046"}},
+       {"frames": [9], "set": {"b": "#e43b44"}},
+       {"frames": [11], "set": {"y": "#c0c8d0", "Y": "#7a8794"}},
+       {"frames": [14], "set": {"g": "#f7d046", "G": "#b8860b"}}
+     ],
+     "ops": [{"op": "center", "step": 2, "frames": ["0-5", "8-14"]}]}
+  ]
+}

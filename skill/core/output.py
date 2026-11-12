@@ -21,7 +21,58 @@ class Frame:
     """單一幀：來源 + 原生幀號 + 當幀軌道屬性。"""
 
     def __init__(self, src, idx=0, props=None):
-        self.src, self.idx, self.props = src, idx, props or {}
+        self.src, self.idx, self.props, self.pal, self.ops = src, idx, props or {}, None, None
+
+
+def _range(v, n, where):
+    """幀範圍：整數或 "a-b"，可混在 list 內。"""
+    out = []
+    for x in v if isinstance(v, list) else [v]:
+        if isinstance(x, str) and "-" in x:
+            a, _, b = x.partition("-")
+            try:
+                out += range(int(a), int(b) + 1)
+            except ValueError:
+                raise ForgeError(f"{where}: 範圍 '{x}' 需為 \"起-迄\"") from None
+        elif isinstance(x, int):
+            out.append(x)
+        else:
+            raise ForgeError(f"{where}: 幀號需為整數或 \"起-迄\"（收到 {x!r}）")
+    bad = next((i for i in out if not 0 <= i < n), None)
+    if bad is not None:
+        raise ForgeError(f"{where}: 幀號 {bad} 超出 0..{n - 1}")
+    return out
+
+
+def set_palette(frs, spec, where):
+    """palette：{字元:色} 套全部；或 [{"frames": [0,"2-4"], "set": {...}}] 依輸出幀序套用。
+    ops 項目可帶 "frames" 限定範圍，未列到的幀不套用。"""
+    ops = spec.get("ops")
+    if isinstance(ops, list) and any(isinstance(o, dict) and "frames" in o for o in ops):
+        per = [[] for _ in frs]
+        for k, o in enumerate(ops):
+            if isinstance(o, dict) and "frames" in o:
+                o = dict(o)
+                idx = _range(o.pop("frames"), len(frs), f"{where}.ops[{k}]")
+            else:
+                idx = range(len(frs))
+            for i in idx:
+                per[i].append(o)
+        for fr, lst in zip(frs, per):
+            fr.ops = lst
+    p = spec.get("palette")
+    if not p:
+        return
+    rules = [{"set": p}] if isinstance(p, dict) else p
+    if not isinstance(rules, list):
+        raise ForgeError(f"{where}: palette 需為 {{字元: 顏色}} 或 [{{frames, set}}]")
+    for k, r in enumerate(rules):
+        w = f"{where}.palette[{k}]"
+        if not (isinstance(r, dict) and isinstance(r.get("set"), dict)):
+            raise ForgeError(f"{w}: 需為 {{\"frames\": [...], \"set\": {{字元: 顏色}}}}")
+        idx = _range(r["frames"], len(frs), w) if "frames" in r else range(len(frs))
+        for i in idx:
+            frs[i].pal = {**(frs[i].pal or {}), **r["set"]}
 
 
 def target_size(size, nat, where):
@@ -64,17 +115,17 @@ class Renderer:
         if rs is not None and rs not in RESAMPLE:
             raise ForgeError(f"{where}: resample 只能是 {'/'.join(RESAMPLE)}")
         key = (id(fr.src), fr.idx, json.dumps(fr.props, sort_keys=True), cw, ch,
-               spec.get("css"), bool(spec.get("crisp")), rs)
+               spec.get("css"), bool(spec.get("crisp")), rs, json.dumps(fr.pal, sort_keys=True))
         img = self.cache.get(key)
         if img is None:
             img = fr.src.render(fr.idx, json.loads(key[2]), cw, ch, spec.get("css"),
-                                bool(spec.get("crisp")), RESAMPLE.get(rs))
+                                bool(spec.get("crisp")), RESAMPLE.get(rs), fr.pal)
             self.cache[key] = img
         if (cw, ch) != (W, H):
             canvas = Image.new("RGBA", (W, H))
             canvas.paste(img, ((W - cw) // 2, (H - ch) // 2))
             img = canvas
-        return apply_ops(img, spec.get("ops"), where)
+        return apply_ops(img, fr.ops if fr.ops is not None else spec.get("ops"), where)
 
 
 def anim_frames(anim, sel, where):
@@ -115,14 +166,29 @@ def build_sheet(job, spec, r, where):
                 raise ForgeError(f"anims.{n}: {a.count} 幀 < 槽位需要的 {per} 幀")
             for j, fr in enumerate(anim_frames(a, list(range(per)), where)):
                 cells.append((bx * per + j, by, fr))
+        if lay.get("skip"):
+            raise ForgeError(f"{where}: layout.skip 不適用槽位模式")
+        set_palette([c[2] for c in cells], spec, where)
     else:
-        a = job.anim(spec.get("anim", True if len(job.anims) == 1 else None), where)
-        frs = anim_frames(a, spec.get("frames"), where) if a else [static_frame(job, spec, where)]
-        n = len(frs)
+        ref = spec.get("anim", True if len(job.anims) == 1 else None)
+        if ref is None and len(job.anims) > 1 and not spec.get("source"):
+            if spec.get("frames") is not None:
+                raise ForgeError(f"{where}: 多組動畫串接時不可用 frames，請指定 anim")
+            frs = [f for a in job.anims.values() for f in anim_frames(a, None, where)]
+        else:
+            a = job.anim(ref, where)
+            frs = anim_frames(a, spec.get("frames"), where) if a else [static_frame(job, spec, where)]
+        set_palette(frs, spec, where)
+        skip = lay.get("skip", 0)
+        if not isinstance(skip, int) or skip < 0:
+            raise ForgeError(f"{where}: layout.skip 需為 ≥0 整數")
+        n = len(frs) + skip
         if not cols:
             cols = math.ceil(n / rows) if rows else n
         rows = rows or math.ceil(n / cols)
-        for k, fr in enumerate(frs):
+        if n > cols * rows:
+            raise ForgeError(f"{where}: {n} 格超過容量 {cols}×{rows}")
+        for k, fr in enumerate(frs, skip):
             x, y = (k // rows, k % rows) if order == "col" else (k % cols, k // cols)
             cells.append((x, y, fr))
     W, H = cols * cw + (cols - 1) * gap, rows * ch + (rows - 1) * gap
@@ -183,6 +249,7 @@ def write_output(job, out, i, outdir: Path, r: Renderer):
     else:
         a = job.anim(spec.get("anim"), where)
         frs = anim_frames(a, spec.get("frames"), where) if a else [static_frame(job, spec, where)]
+        set_palette(frs, spec, where)
         W, H = target_size(spec.get("size"), frs[0].src.size, where)
         frames = [r.fit(fr, W, H, spec, where) for fr in frs]
         n = len(frames)
@@ -238,9 +305,21 @@ def _font(size):
         return ImageFont.load_default()
 
 
-def preview(items, path: Path, limit=512):
-    """items: [(標籤, [影像...])]；每列一個輸出，多幀並排標號。"""
+def _preview_colors(bg):
+    """回傳 (底色, 棋盤格兩色, 文字色)。"""
+    if bg in (None, "light"):
+        return (255, 255, 255, 255), ((255, 255, 255, 255), (220, 220, 220, 255)), (60, 60, 60, 255)
+    if bg == "dark":
+        return (24, 24, 32, 255), ((24, 24, 32, 255), (40, 40, 52, 255)), (200, 200, 200, 255)
+    c = _color(bg, "--preview-bg")
+    light = sum(c[:3]) > 382
+    return c, (c, c), ((60, 60, 60, 255) if light else (200, 200, 200, 255))
+
+
+def preview(items, path: Path, limit=512, bg=None):
+    """items: [(標籤, [影像...])]；每列一個輸出，多幀並排標號。bg：light / dark / #rrggbb。"""
     font = _font(11)
+    base, checker, ink = _preview_colors(bg)
     rows = []
     for label, imgs in items:
         thumbs = []
@@ -257,10 +336,10 @@ def preview(items, path: Path, limit=512):
         h = max(t.height for t in thumbs) + 14 + (12 if multi else 0)
         row = Image.new("RGBA", (max(w, 60), h))
         d = ImageDraw.Draw(row)
-        d.text((0, 0), label, fill=(60, 60, 60, 255), font=font)
+        d.text((0, 0), label, fill=ink, font=font)
         x = 0
         for k, t in enumerate(thumbs):
-            row.paste(_checker(t.size), (x, 14))
+            row.paste(_checker(t.size, checker), (x, 14))
             row.alpha_composite(t, (x, 14))
             if multi:
                 d.text((x, 14 + t.height), str(k), fill=(200, 0, 0, 255), font=font)
@@ -270,7 +349,7 @@ def preview(items, path: Path, limit=512):
         rows.append(row)
     W = max(r.width for r in rows)
     H = sum(r.height for r in rows) + 6 * (len(rows) - 1)
-    canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    canvas = Image.new("RGBA", (W, H), base)
     y = 0
     for r in rows:
         canvas.alpha_composite(r, (0, y))
@@ -281,10 +360,10 @@ def preview(items, path: Path, limit=512):
     canvas.convert("RGB").save(path)
 
 
-def _checker(size, n=8):
-    img = Image.new("RGBA", size, (255, 255, 255, 255))
+def _checker(size, colors, n=8):
+    img = Image.new("RGBA", size, colors[0])
     d = ImageDraw.Draw(img)
     for y in range(0, size[1], n):
         for x in range((y // n % 2) * n, size[0], 2 * n):
-            d.rectangle([x, y, x + n - 1, y + n - 1], fill=(220, 220, 220, 255))
+            d.rectangle([x, y, x + n - 1, y + n - 1], fill=colors[1])
     return img

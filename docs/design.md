@@ -1,6 +1,7 @@
 # imgforge 設計文件
 
 > 狀態：P0–P3 完成（2026-11-12）；P4 claude.ai 取消（以 Claude Code 對話內使用為主）。
+> 追加（2026-11-12）：`mv-iconset`（skip 留 index 0、高度依數量）、`.pix` `palette` 換色、`center` op、op/palette 皆可用 `frames` 指定範圍。範例 `examples/iconset.json`。render `--preview-bg light|dark|#hex` 預覽底色。MV 專用規則移至 `skill/guides/rpgmaker-mv.md`，SKILL.md 只留索引。
 
 ## 1. 目的
 
@@ -162,11 +163,12 @@ mirror: x          # 只寫左半，自動鏡像右半（省一半 token）
 | `matte` | GIF 專用：半透明邊緣預先混合的底色，避免鋸齒白邊 |
 | `resample` | `lanczos`（預設）/ `nearest`（像素風自動） |
 | `anim` | 動畫名稱。配合 gif/webp/apng 輸出動畫；配合 `cell` 輸出 sheet |
-| `cell` + `layout` | sprite sheet：格子尺寸、`cols`/`rows`/`gap`/`order` |
+| `cell` + `layout` | sprite sheet：格子尺寸、`cols`/`rows`/`gap`/`order`/`skip`（開頭留空格數，非槽位模式）。未指定 `anim` 且有多組動畫時依序串接全部幀 |
 | `frames` | 取部分幀或指定播放順序，如 `[0, 2]`、`[1, 0, 1, 2]` |
 | `preset` | 套用命名規格（見 §7），其餘欄位可覆寫 |
 | `quality` / `colors` | jpg/webp 品質（webp 未給則無損）；減色數（像素風） |
 | `css` | 追加至內嵌 `<style>` 的規則，用於換色變體，例 `.fur{fill:#3a7bd5}` |
+| `palette` | `.pix` 換色：`{字元: 顏色}` 套用全部幀，或 `[{"frames": [1, "3-5"], "set": {...}}]` 依輸出幀序（`frames` 選取後、sheet 排列順序）指定範圍；只能覆寫原檔已定義的字元 |
 | `crisp` | SVG 以 crispEdges 點陣化（小尺寸硬邊） |
 | `fps` | 覆寫動畫 fps |
 | `source` | 此輸出改用其他原圖（靜態） |
@@ -196,7 +198,7 @@ python imgforge.py presets                  # 列出預設規格
 | 位置 | 用途 | 方式 |
 |---|---|---|
 | `skill/presets/*.json` | 命名規格（尺寸、格子、排列、槽位、背景、檔名規則） | 加檔即生效 |
-| `skill/ops/*.py` | 後處理操作（逐格套用） | `@register("名稱")` 註冊 `fn(img, **參數) -> img`，核心自動載入；輸出以 `ops` 欄位使用。內建 sharpen / outline / shadow |
+| `skill/ops/*.py` | 後處理操作（逐格套用） | `@register("名稱")` 註冊 `fn(img, **參數) -> img`，核心自動載入；輸出以 `ops` 欄位使用。內建 sharpen / outline / shadow / center（依不透明範圍置中，`axis`、`step` 取倍數保格線、`dx`/`dy` 偏移）。每個 op 可帶 `frames`（同 palette 範圍語法）只套指定幀 |
 | `skill/library/` | 可重用 SVG 部件（以 0,0 為中心） | `<use href="lib:eye_round" x= y=>` 引用；內建 eye_round / eye_closed / eye_happy / blush / mouth_smile / sparkle |
 
 ### 7.1 槽位（slots）：preset 對應多組動畫
@@ -225,7 +227,7 @@ python imgforge.py presets                  # 列出預設規格
 | `mv-face` | 144×144 單格；`mv-faces` 576×288（4×2） |
 | `mv-character-single` | `$` 單隻 144×192，3×4 格 48×48，槽位 down/left/right/up，播放 1-0-1-2 |
 | `mv-sv-actor` | 576×384，64×64，9×6；18 個動作槽位 × 3 幀 |
-| `mv-iconset` | 寬 512，32×32 格 |
+| `mv-iconset` | 寬 512（引擎 `iconIndex % 16` 寫死 16 欄），32×32；`skip: 1` 讓 index 0 留空（0 = 無圖示），高度依數量（不必補到 640） |
 | `mv-enemy` | 尺寸自由、透明底 |
 
 ## 8. AI 使用流程（SKILL.md 摘要）

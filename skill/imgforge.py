@@ -25,7 +25,7 @@ def cmd_render(a):
             items[key] = (items[key][0] + ", " + label, imgs) if key in items else (label, imgs)
     if not a.no_preview and items:
         p = outdir / "_preview.png"
-        preview(list(items.values()), p)
+        preview(list(items.values()), p, bg=a.preview_bg)
         print(f"PREVIEW {os.path.relpath(p).replace(os.sep, '/')}")
 
 
@@ -96,6 +96,7 @@ def main(argv=None):
     p.add_argument("job")
     p.add_argument("-o", "--out", help="輸出目錄（預設 job 旁的 out/）")
     p.add_argument("--no-preview", action="store_true")
+    p.add_argument("--preview-bg", default="light", help="預覽底色：light / dark / #rrggbb（成品放深色底時用 dark 檢查）")
     p.set_defaults(fn=cmd_render)
     p = sub.add_parser("quick", help="單圖免寫 job")
     p.add_argument("src")
