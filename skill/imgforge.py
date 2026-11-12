@@ -57,7 +57,11 @@ def cmd_check(a):
     from core.raster import backends
     if not a.file:
         b = backends()
+        from core.ops import available
+        from core.sources import LIB
         print(f"backends: {' '.join(b) if b else '無（SVG 不可用；pip install resvg-py）'}")
+        print(f"ops: {' '.join(sorted(available()))}")
+        print(f"lib: {' '.join(sorted(f.stem for f in LIB.glob('*.svg'))) or '-'}")
         return
     p = Path(a.file)
     if p.suffix.lower() == ".json":

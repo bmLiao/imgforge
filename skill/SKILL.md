@@ -26,6 +26,7 @@ CLI：`python <本 skill 目錄>/imgforge.py <指令>`（需 Python 3.10+、Pill
 - 顏色用 class + 內嵌 `<style>`（`.fur{fill:#f08a24}`）。**不可用 CSS `var()`**（後端不支援）。
 - 預設隱藏的部位寫 `display="none"`，以 `hide:false` 顯示。眨眼 = `eye_open`/`eye_closed` 兩組交替。
 - 巢狀群組：動畫附加在原 transform 後；`pivot` 用該群組內的座標；子群組跟隨父群組。
+- 部件庫（省 token）：`<use href="lib:eye_round" x="14" y="18"/>`，部件以 (0,0) 為中心；清單見 `check`。可用 class `.eye` `.blush` `.mouth` `.sparkle` 換色。
 
 ## .pix
 
@@ -65,7 +66,7 @@ mirror: x        # 只寫左半 ceil(w/2) 字元；y 為上半；xy 兩者
 - 只有一組動畫可寫頂層 `"frames": {...}`（= `anims.default`），輸出用 `"anim": true`。
 - 軌道值：常數 / `[每幀值]` / `{"wave": 振幅, "phase": 0~1}` / `{"keys": {"幀": 值}, "ease": "linear|in|out|inOut"}`（預設循環回第 0 幀）。
 - 屬性：`tx ty rot sx sy s opacity`（數值）、`hide fill`（不可 wave）。`rot/sx/sy` 必須給 `pivot`。`"*"` = 整張圖（.pix/PNG 只能用 `*`，單位為像素）。
-- 輸出欄位：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`matte`（GIF 邊緣底色）、`css`（追加樣式，換色變體）、`crisp`、`resample`、`frames`（如 `[1,0,1,2]`）、`fps`、`quality`、`colors`、`source`（覆寫原圖）。
+- 輸出欄位：`file`（副檔名定格式 png/apng/jpg/webp/gif/svg）、`size`（`[w,h]`，等比填 `null`）、`fit`（contain 留白 / cover 裁切 / stretch / pad 不縮放）、`bg`、`matte`（GIF 邊緣底色）、`css`（追加樣式，換色變體）、`crisp`、`resample`、`frames`（如 `[1,0,1,2]`）、`fps`、`quality`、`colors`、`source`（覆寫原圖）、`ops`（後處理，逐格套用：`["sharpen", {"op":"outline","color":"#000","width":1}, {"op":"shadow","dx":2,"dy":2}]`）。
 - sheet：`cell` + `layout {cols, rows, gap, order: row|col}`。槽位模式：`per` + `slots`（每槽位取同名動畫前 per 幀）。
 
 ## 指令
@@ -73,8 +74,8 @@ mirror: x        # 只寫左半 ceil(w/2) 字元；y 為上半；xy 兩者
 ```
 render job.json [-o 目錄] [--no-preview]
 quick src.svg -s 16,32,64 -o icon_{s}.png [--fit cover] [--bg #fff]
-check [檔案]        # 無參數列出後端；svg 列出 id
+check [檔案]        # 無參數列出後端、ops、lib 部件；svg 列出 id
 presets             # 列出預設規格（icon-*、mv-*）
 ```
 
-MV 行走圖：動畫名 `down/left/right/up` 各 3 幀，第 1 幀為站立（遊戲播放 1-0-1-2）。SV 戰鬥圖：18 個動作名見 `presets`。
+MV 行走圖：動畫名 `down/left/right/up` 各 3 幀，第 1 幀為站立（遊戲播放 1-0-1-2）。右向可由左向鏡像：同軌道再加 `"*": {"sx": -1}`，省一份原圖。SV 戰鬥圖：18 個動作名見 `presets`。

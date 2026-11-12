@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from . import ForgeError
+from .ops import apply as apply_ops
 from .sources import SvgSource, _color
 
 FMT = {".png": "png", ".apng": "apng", ".jpg": "jpg", ".jpeg": "jpg",
@@ -69,11 +70,11 @@ class Renderer:
             img = fr.src.render(fr.idx, json.loads(key[2]), cw, ch, spec.get("css"),
                                 bool(spec.get("crisp")), RESAMPLE.get(rs))
             self.cache[key] = img
-        if (cw, ch) == (W, H):
-            return img
-        canvas = Image.new("RGBA", (W, H))
-        canvas.paste(img, ((W - cw) // 2, (H - ch) // 2))
-        return canvas
+        if (cw, ch) != (W, H):
+            canvas = Image.new("RGBA", (W, H))
+            canvas.paste(img, ((W - cw) // 2, (H - ch) // 2))
+            img = canvas
+        return apply_ops(img, spec.get("ops"), where)
 
 
 def anim_frames(anim, sel, where):

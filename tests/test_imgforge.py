@@ -105,6 +105,34 @@ class TestOutputs(Base):
         self.assertEqual(Image.open(TMP / "q" / "icon_32.png").size, (32, 32))
 
 
+class TestP3(Base):
+    def test_lib_and_ops(self):
+        write("face.svg", '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">'
+              '<circle cx="20" cy="20" r="16" fill="#ffd27f"/>'
+              '<use href="lib:eye_round" x="14" y="18"/><use href="lib:eye_round" x="26" y="18"/>'
+              '<use href="lib:blush" x="11" y="25"/><use href="lib:mouth_smile" x="20" y="27"/></svg>')
+        code, out = self.render({"source": "face.svg", "outputs": [
+            {"file": "face.png", "size": [80, 80]},
+            {"file": "face_ol.png", "size": [80, 80], "ops": ["sharpen", {"op": "outline", "width": 2}, "shadow"]}]})
+        self.assertEqual(code, 0, out)
+        im = Image.open(TMP / "out" / "face.png")
+        self.assertEqual(im.getpixel((28, 36))[:3], (26, 26, 26))  # 左眼（14,18）×2
+        ol = Image.open(TMP / "out" / "face_ol.png")
+        self.assertGreater(ol.getpixel((40, 6))[3], 0)  # 描邊擴出圓外
+
+    def test_flip_right_from_left(self):
+        code, out = self.render({"source": "pet.svg", "anims": {
+            "left": {"count": 1}, "right": {"count": 1, "tracks": {"*": {"sx": -1}}}},
+            "outputs": [{"file": "lr.png", "cell": [50, 50], "per": 1, "layout": {"cols": 2}}]})
+        self.assertEqual(code, 0, out)
+        im = Image.open(TMP / "out" / "lr.png")
+        self.assertEqual(im.getpixel((36, 25)), im.getpixel((50 + 13, 25)))  # 尾巴鏡像
+
+    def test_ops_error(self):
+        code, out = self.render({"source": "pet.svg", "outputs": [{"file": "a.png", "ops": ["nope"]}]})
+        self.assertIn("無操作 'nope'", out)
+
+
 class TestErrors(Base):
     def err(self, job, expect, name="job.json"):
         code, out = self.render(job, name)
