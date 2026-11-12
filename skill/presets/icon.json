@@ -1,0 +1,8 @@
+{
+  "icon-16": {"desc": "16×16 png", "file": "{name}_16.png", "size": [16, 16]},
+  "icon-32": {"desc": "32×32 png", "file": "{name}_32.png", "size": [32, 32]},
+  "icon-64": {"desc": "64×64 png", "file": "{name}_64.png", "size": [64, 64]},
+  "icon-128": {"desc": "128×128 png", "file": "{name}_128.png", "size": [128, 128]},
+  "icon-256": {"desc": "256×256 png", "file": "{name}_256.png", "size": [256, 256]},
+  "icon-512": {"desc": "512×512 png", "file": "{name}_512.png", "size": [512, 512]}
+}

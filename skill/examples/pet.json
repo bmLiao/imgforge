@@ -1,0 +1,24 @@
+{
+  "source": "pet.svg",
+  "anims": {
+    "idle": {
+      "count": 4, "fps": 8,
+      "tracks": {
+        "body": {"ty": {"wave": 2}},
+        "tail": {"rot": [0, 15, 0, -15], "pivot": [72, 60]},
+        "eye_open": {"hide": [false, false, false, true]},
+        "eye_closed": {"hide": [true, true, true, false]}
+      }
+    }
+  },
+  "outputs": [
+    {"file": "pet_128.png", "size": [128, 128]},
+    {"preset": "icon-16"},
+    {"file": "pet_blue.png", "size": [128, null], "css": ".fur{fill:#3a7bd5}"},
+    {"file": "pet_sheet.png", "anim": "idle", "cell": [64, 64]},
+    {"file": "pet.webp", "anim": "idle", "size": [128, 128]},
+    {"file": "pet.gif", "anim": "idle", "size": [128, 128], "matte": "#ffffff"},
+    {"file": "pet.jpg", "size": [256, 256], "quality": 90},
+    {"file": "pet_out.svg", "size": [64, 64]}
+  ]
+}

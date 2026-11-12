@@ -1,0 +1,25 @@
+size: 12x10
+palette: .=transparent k=#1a1a1a g=#5ac54f l=#9de64e w=#ffffff
+mirror: x          # 只寫左半
+---
+......
+...kkk
+..kllg
+.klggg
+.klwkg
+kggwkg
+kggggg
+kggggg
+.kgggg
+..kkkk
+---
+......
+......
+...kkk
+.kkllg
+klggwk
+kgggwk
+kggggg
+kggggg
+kggggg
+.kkkkk

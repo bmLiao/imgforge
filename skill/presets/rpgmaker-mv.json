@@ -1,0 +1,30 @@
+{
+  "mv-face": {
+    "desc": "MV 臉圖單格 144×144",
+    "file": "{name}_face.png", "size": [144, 144]
+  },
+  "mv-faces": {
+    "desc": "MV 臉圖組 576×288，4×2 格；槽位預設依 anims 順序（各取第 0 幀）",
+    "file": "{name}_faces.png", "cell": [144, 144], "layout": {"cols": 4, "rows": 2}, "per": 1
+  },
+  "mv-character-single": {
+    "desc": "MV $ 單隻行走圖 144×192，3×4 格 48×48；槽位 down/left/right/up 各 3 幀（第 1 幀為站立，播放 1-0-1-2）",
+    "file": "${name}.png", "cell": [48, 48], "layout": {"cols": 3, "rows": 4}, "per": 3,
+    "slots": ["down", "left", "right", "up"]
+  },
+  "mv-sv-actor": {
+    "desc": "MV 側視戰鬥圖 576×384，64×64，9×6；18 動作槽位各 3 幀，縱向排列",
+    "file": "{name}_sv.png", "cell": [64, 64], "layout": {"cols": 9, "rows": 6, "order": "col"}, "per": 3,
+    "slots": ["walk", "wait", "chant", "guard", "damage", "evade",
+              "thrust", "swing", "missile", "skill", "spell", "item",
+              "escape", "victory", "dying", "abnormal", "sleep", "dead"]
+  },
+  "mv-iconset": {
+    "desc": "MV IconSet 寬 512，32×32 格每列 16；槽位預設依 anims 順序（各取第 0 幀）",
+    "file": "IconSet.png", "cell": [32, 32], "layout": {"cols": 16}, "per": 1
+  },
+  "mv-enemy": {
+    "desc": "MV 敵人圖，尺寸自由、透明底",
+    "file": "{name}.png"
+  }
+}

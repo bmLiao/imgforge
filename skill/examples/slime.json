@@ -1,0 +1,9 @@
+{
+  "source": "slime.pix",
+  "frames": {"fps": 4},
+  "outputs": [
+    {"file": "slime_sheet.png", "cell": [48, 40]},
+    {"file": "slime.gif", "anim": true, "size": [96, null]},
+    {"file": "slime_x5.png", "size": [60, null]}
+  ]
+}
